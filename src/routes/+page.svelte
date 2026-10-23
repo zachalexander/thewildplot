@@ -9,10 +9,9 @@
 <main class="home">
 	<div class="container">
 		<header class="site-intro">
-			<h1 class="wordmark">the wild plot</h1>
+			<h1 class="wordmark"><img src="/wildplot.png" alt="the wild plot" class="hero-logo" /></h1>
 			<p>
-				Visual essays. Each piece is a question worth asking — answered with
-				numbers, maps, and honesty.
+				Hand-drawn data visuals and essays about the wonder of the natural world, and about us being present for it.
 			</p>
 		</header>
 
@@ -31,25 +30,32 @@
 	}
 
 	.site-intro {
-		display: flex;
-		flex-wrap: wrap;
-		justify-content: space-between;
-		align-items: flex-end;
-		gap: 16px 40px;
+		text-align: center;
 		padding-bottom: 28px;
 		margin-bottom: 32px;
 		border-bottom: var(--rule);
 	}
 
-	/* Slimmed-down wordmark: big enough to brand the page, short enough that tiles stay near the top */
 	.wordmark {
-		font-size: clamp(3.5rem, 11vw, 9.5rem);
-		line-height: 0.85;
-		letter-spacing: -0.05em;
+		line-height: 0;
+	}
+
+	.hero-logo {
+		display: inline-block;
+		width: 100%;
+		max-width: 680px;
+		height: auto;
+	}
+
+	.newsletter-section {
+		margin-bottom: 40px;
+		padding-bottom: 28px;
+		border-bottom: var(--rule);
 	}
 
 	.site-intro p {
-		max-width: 420px;
+		max-width: 520px;
+		margin: 0 auto;
 		font-size: 1.125rem;
 		line-height: 1.5;
 	}

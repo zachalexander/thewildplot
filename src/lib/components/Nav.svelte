@@ -1,14 +1,6 @@
-<script>
-	import { page } from '$app/stores';
-</script>
-
 <nav class="nav" aria-label="Main">
 	<div class="nav-inner">
 		<a href="/" class="wordmark">the wild plot</a>
-		<div class="nav-links">
-			<a href="/visual-essays" class:active={$page.url.pathname.startsWith('/visual-essays')}>Visual Essays</a>
-<a href="/about" class:active={$page.url.pathname === '/about'}>About</a>
-		</div>
 	</div>
 </nav>
 
@@ -30,8 +22,6 @@
 		height: 100%;
 		display: flex;
 		align-items: center;
-		justify-content: space-between;
-		gap: 16px;
 	}
 
 	.wordmark {
@@ -42,36 +32,9 @@
 		color: var(--text);
 	}
 
-	.nav-links {
-		display: flex;
-		gap: 24px;
-	}
-
-	.nav-links a {
-		font-size: 1rem;
-		font-weight: 500;
-		color: var(--text);
-		padding: 10px 0;
-		border-bottom: 2px solid transparent;
-		transition: border-color 0.15s ease;
-	}
-
-	.nav-links a:hover,
-	.nav-links a.active {
-		border-bottom-color: var(--text);
-	}
-
 	@media (max-width: 480px) {
 		.wordmark {
 			font-size: 1.25rem;
-		}
-
-		.nav-links {
-			gap: 16px;
-		}
-
-		.nav-links a {
-			font-size: 0.9375rem;
 		}
 	}
 </style>

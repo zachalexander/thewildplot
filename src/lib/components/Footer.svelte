@@ -1,4 +1,11 @@
+<script>
+	import NewsletterSignup from '$lib/components/NewsletterSignup.svelte';
+</script>
+
 <footer class="footer">
+	<div class="footer-newsletter">
+		<NewsletterSignup />
+	</div>
 	<div class="footer-inner">
 		<span class="wordmark">the wild plot</span>
 		<span class="muted">Visual essays by Zach Alexander</span>
@@ -9,6 +16,12 @@
 	.footer {
 		margin-top: 120px;
 		padding: 0 var(--gutter);
+	}
+
+	.footer-newsletter {
+		max-width: var(--max-width);
+		margin: 0 auto;
+		padding: 0 var(--gutter) 40px;
 	}
 
 	.footer-inner {
