@@ -24,6 +24,13 @@
 		padding: 0 var(--gutter) 40px;
 	}
 
+	@media (max-width: 480px) {
+		.footer-newsletter {
+			border-top: var(--rule);
+			padding-top: 32px;
+		}
+	}
+
 	.footer-inner {
 		max-width: var(--max-width);
 		margin: 0 auto;

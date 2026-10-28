@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="80" height="40" viewBox="0 0 80 40">
+  <text x="40" y="10" text-anchor="middle" font-size="6" fill="#999">PLACEHOLDER</text>
+  <!-- Wings down -->
+  <ellipse cx="30" cy="25" rx="14" ry="5" fill="#7e9a7d" transform="rotate(30 30 25)"/>
+  <ellipse cx="30" cy="15" rx="14" ry="5" fill="#7e9a7d" transform="rotate(-30 30 15)"/>
+  <!-- Body -->
+  <ellipse cx="45" cy="20" rx="18" ry="7" fill="#b5523b"/>
+  <!-- Beak -->
+  <line x1="63" y1="20" x2="78" y2="18" stroke="#22211f" stroke-width="2" stroke-linecap="round"/>
+  <!-- Eye -->
+  <circle cx="55" cy="18" r="2" fill="#22211f"/>
+</svg>

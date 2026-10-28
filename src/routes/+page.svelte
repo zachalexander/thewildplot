@@ -11,7 +11,8 @@
 		<header class="site-intro">
 			<h1 class="wordmark"><img src="/wildplot.png" alt="the wild plot" class="hero-logo" /></h1>
 			<p>
-				Hand-drawn data visuals and essays about the wonder of the natural world, and our place in it.
+				Hand-drawn data visuals and essays about the wonder of the natural world, and our place
+				in it.
 			</p>
 		</header>
 
@@ -45,12 +46,6 @@
 		width: 100%;
 		max-width: 680px;
 		height: auto;
-	}
-
-	.newsletter-section {
-		margin-bottom: 40px;
-		padding-bottom: 28px;
-		border-bottom: var(--rule);
 	}
 
 	.site-intro p {

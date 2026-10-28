@@ -1,0 +1,78 @@
+{
+  "meta": {
+    "title": "A bird lighter than a nickel flew 3,617 miles",
+    "source": "Alaska Wildlife Conservation Center, HumTrack Project, 2026",
+    "sourceNote": "Minimum point-to-point distances; preliminary",
+    "sizeSource": "Cornell Lab, All About Birds",
+    "checkedDate": "2026-10-28",
+    "taggingDate": "2026-06-24",
+    "announcementDate": "2026-10-23",
+    "announcementAuthor": "Nicole Geils"
+  },
+  "birds": [
+    {
+      "id": "bird-1",
+      "distanceKm": 5553,
+      "distanceMi": 3450,
+      "start": { "lat": 60.83, "lng": -148.87, "label": "AWCC, Portage, AK" },
+      "end": { "lat": "TODO", "lng": "TODO", "label": "TODO" }
+    },
+    {
+      "id": "bird-2",
+      "distanceKm": 5678,
+      "distanceMi": 3528,
+      "start": { "lat": 60.83, "lng": -148.87, "label": "AWCC, Portage, AK" },
+      "end": { "lat": "TODO", "lng": "TODO", "label": "TODO" }
+    },
+    {
+      "id": "record",
+      "distanceKm": 5821,
+      "distanceMi": 3617,
+      "start": { "lat": 60.83, "lng": -148.87, "label": "AWCC, Portage, AK" },
+      "end": { "lat": 20.67, "lng": -103.35, "label": "Guadalajara, Mexico" },
+      "bodyLengths": { "min": 65000000, "max": 83000000 },
+      "earlyPings": ["Glacier Island", "Seward"]
+    }
+  ],
+  "oldRecord": {
+    "distanceKm": 5679,
+    "distanceMi": 3529,
+    "start": { "lat": 30.4383, "lng": -84.2807, "label": "Tallahassee, FL" },
+    "end": { "lat": 60.068, "lng": -148.0, "label": "Chenega Bay, AK" },
+    "year": 2010,
+    "daysApart": 166,
+    "bandNumber": "H82779",
+    "bandedBy": "Fred Dietrich",
+    "bandedOrg": "Hummer/Bird Study Group",
+    "recapturedBy": "Kate McLaughlin",
+    "masterBander": "Stacy Jon Peterson",
+    "note": "Second-year female; approximate town coordinates"
+  },
+  "species": {
+    "name": "Rufous Hummingbird",
+    "massG": [2.5, 5.5],
+    "lengthCm": [7, 9],
+    "populationDecline": "60% since the 1990s",
+    "source": "Cornell Lab, All About Birds"
+  },
+  "tracking": {
+    "project": "HumTrack",
+    "transmitter": "BluMorpho",
+    "transmitterWeightG": 0.06,
+    "transmitterCost": 200,
+    "manufacturer": "Cellular Tracking Technologies",
+    "detection": "Crowdsourced Bluetooth — signals picked up by hikers, rafters, cruise ships",
+    "partners": [
+      "Alaska Wildlife Conservation Center",
+      "U.S. Fish and Wildlife Service",
+      "Banding Coalition of the Americas"
+    ],
+    "researchers": [
+      { "name": "Emma Rhodes", "role": "HumTrack co-founder", "affiliation": "University of Memphis" },
+      { "name": "Kyle Shepard", "role": "HumTrack co-founder", "affiliation": "Banding Coalition of the Americas" },
+      { "name": "Todd Eskelin", "role": "Field lead, tagging at AWCC", "affiliation": "USFWS, Kenai National Wildlife Refuge" },
+      { "name": "Elizabeth Cuccio", "role": "Technician, tagging at AWCC", "affiliation": "USFWS" }
+    ],
+    "fundingNote": "$295,000 federal grant to Emma Rhodes"
+  }
+}

@@ -56,7 +56,8 @@
 	}
 
 	.newsletter-input {
-		width: 240px;
+		width: 100%;
+		max-width: 240px;
 		padding: 10px 14px;
 		font-family: var(--font-body);
 		font-size: 0.9375rem;
@@ -95,11 +96,16 @@
 	@media (max-width: 480px) {
 		.newsletter-form {
 			flex-direction: column;
-			align-items: stretch;
+			align-items: center;
 		}
 
 		.newsletter-input {
 			max-width: none;
+			width: 100%;
+		}
+
+		.newsletter-button {
+			width: 100%;
 		}
 	}
 </style>

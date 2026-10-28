@@ -19,7 +19,7 @@
 	);
 </script>
 
-{#if tags.length > 1}
+{#if stories.length > 1 && tags.length > 1}
 	<div class="filters" role="group" aria-label="Filter by topic">
 		<button
 			type="button"

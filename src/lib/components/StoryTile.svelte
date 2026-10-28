@@ -12,7 +12,11 @@
 	const inProgress = $derived(story.status && story.status !== 'published');
 </script>
 
-<a href="/visual-essays/{story.slug}" class="tile" class:large style:--tile-bg={bg} style:--tile-ink={ink}>
+<a href="/visual-essays/{story.slug}" class="tile" class:large class:has-cover={story.cover} style:--tile-bg={bg} style:--tile-ink={ink}>
+	{#if story.cover}
+		<img src={story.cover} alt="" class="tile-cover" />
+	{/if}
+
 	<div class="tile-top">
 		{#if story.tags?.length}
 			<span class="eyebrow">{story.tags[0]}</span>
@@ -54,6 +58,43 @@
 	.tile.large {
 		min-height: 480px;
 		padding: clamp(28px, 4vw, 40px);
+	}
+
+	.tile-cover {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		object-position: 60% 35%;
+		pointer-events: none;
+	}
+
+	.has-cover .tile-top,
+	.has-cover .tile-body {
+		position: relative;
+		z-index: 1;
+	}
+
+	.has-cover .tile-title,
+	.has-cover .tile-description,
+	.has-cover .tile-date,
+	.has-cover .eyebrow,
+	.has-cover .badge {
+		text-shadow: 0 1px 4px var(--tile-bg), 0 0 12px var(--tile-bg);
+	}
+
+	.has-cover::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		background: linear-gradient(
+			to top,
+			var(--tile-bg) 0%,
+			color-mix(in srgb, var(--tile-bg) 60%, transparent) 20%,
+			transparent 40%
+		);
+		pointer-events: none;
 	}
 
 	.tile-top {
