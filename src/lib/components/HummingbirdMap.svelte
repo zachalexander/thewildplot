@@ -207,15 +207,34 @@
 			const allGeoPoints = segments.flat();
 			const points = allGeoPoints.map((p) => projection(p));
 
-			// Build a combined interpolator that walks along all segments
-			function interp(t) {
-				const totalSegs = allCoords.length - 1;
-				const seg = Math.min(Math.floor(t * totalSegs), totalSegs - 1);
-				const segT = (t * totalSegs) - seg;
-				return d3.geoInterpolate(allCoords[seg], allCoords[seg + 1])(segT);
+			// Compute cumulative arc lengths for constant-speed interpolation
+			const segLengths = [];
+			for (let i = 0; i < allCoords.length - 1; i++) {
+				segLengths.push(d3.geoDistance(allCoords[i], allCoords[i + 1]));
+			}
+			const totalLength = segLengths.reduce((a, b) => a + b, 0);
+			const cumLengths = [0];
+			for (let i = 0; i < segLengths.length; i++) {
+				cumLengths.push(cumLengths[i] + segLengths[i]);
 			}
 
-			return { points, allCoords, waypointData, start, end, interp, bird };
+			// Interpolate at constant speed along the route
+			function interp(t) {
+				const targetDist = t * totalLength;
+				// Find which segment we're in
+				let seg = 0;
+				for (let i = 1; i < cumLengths.length; i++) {
+					if (cumLengths[i] >= targetDist) { seg = i - 1; break; }
+					seg = i - 1;
+				}
+				seg = Math.min(seg, allCoords.length - 2);
+				const segT = segLengths[seg] > 0
+					? (targetDist - cumLengths[seg]) / segLengths[seg]
+					: 0;
+				return d3.geoInterpolate(allCoords[seg], allCoords[seg + 1])(Math.min(segT, 1));
+			}
+
+			return { points, allCoords, waypointData, start, end, interp, bird, cumLengths, totalLength };
 		}
 
 		const recordRoute = makeRoute(recordBird);
@@ -292,15 +311,14 @@
 	const gulfLabelPos = $derived(mapState?.projection([-145, 53]) ?? null);
 	const startLabelPos = $derived(mapState?.projection([-158, 53]) ?? null);
 
-	// Waypoint positions with their t-values (evenly spaced across segments)
+	// Waypoint positions with t-values based on cumulative arc length
 	const waypointPositions = $derived.by(() => {
 		if (!mapState) return [];
 		const route = mapState.recordRoute;
-		const totalSegs = route.allCoords.length - 1;
 		return route.waypointData.map((wp, i) => {
 			const pos = mapState.projection([wp.lng, wp.lat]);
-			// Waypoint i is at t = (i + 1) / totalSegs
-			const wpT = (i + 1) / totalSegs;
+			// Waypoint i sits at the end of segment (i+1), use cumulative length
+			const wpT = route.cumLengths[i + 1] / route.totalLength;
 			return pos ? { ...wp, x: pos[0], y: pos[1], t: wpT } : null;
 		}).filter(Boolean);
 	});
@@ -329,9 +347,14 @@
 
 	const partialRecordPath = $derived.by(() => {
 		if (!mapState) return '';
-		const pts = mapState.recordRoute.points;
-		const endIdx = Math.round(flightT * (pts.length - 1));
-		const partial = pts.slice(0, endIdx + 1).filter((p) => p);
+		const interp = mapState.recordRoute.interp;
+		const steps = Math.max(Math.round(flightT * 200), 2);
+		const partial = [];
+		for (let i = 0; i <= steps; i++) {
+			const t = (i / steps) * flightT;
+			const p = mapState.projection(interp(t));
+			if (p) partial.push(p);
+		}
 		if (partial.length < 2) return '';
 		return line(partial);
 	});
@@ -661,7 +684,10 @@
 				{#if flightT >= 1 && recordEndPos}
 					<circle cx={recordEndPos[0]} cy={recordEndPos[1]} r={8 / camera.scale} fill="var(--brick, #b5523b)" />
 					<circle cx={recordEndPos[0]} cy={recordEndPos[1]} r={8 / camera.scale} fill="none" stroke="#fff" stroke-width={2 / camera.scale} />
-					<text x={recordEndPos[0]} y={recordEndPos[1] + 24 / camera.scale} class="endpoint-label" text-anchor="middle" fill="var(--brick, #b5523b)" font-weight="800" font-size="{15 / camera.scale}px">
+					<text x={recordEndPos[0]} y={recordEndPos[1] + 20 / camera.scale} class="endpoint-label-halo" text-anchor="middle" font-weight="700" font-size="{11 / camera.scale}px" stroke-width={3 / camera.scale}>
+						{recordBird.end.label}
+					</text>
+					<text x={recordEndPos[0]} y={recordEndPos[1] + 20 / camera.scale} class="endpoint-label" text-anchor="middle" fill="var(--brick, #b5523b)" font-weight="700" font-size="{11 / camera.scale}px">
 						{recordBird.end.label}
 					</text>
 				{/if}
@@ -800,6 +826,13 @@
 		opacity: 0.8;
 	}
 
+	.endpoint-label-halo {
+		font-family: var(--font-body, 'Karla', sans-serif);
+		fill: none;
+		stroke: var(--bg, #fffdf8);
+		paint-order: stroke;
+	}
+
 	.endpoint-label {
 		font-family: var(--font-body, 'Karla', sans-serif);
 	}
@@ -824,16 +857,6 @@
 		order: -1;
 	}
 
-	@media (min-width: 600px) {
-		.controls {
-			position: absolute;
-			bottom: 12px;
-			left: 50%;
-			transform: translateX(-50%);
-			padding: 0;
-			order: unset;
-		}
-	}
 
 	.controls-hint {
 		display: block;
