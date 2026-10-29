@@ -29,9 +29,16 @@
       "distanceKm": 5821,
       "distanceMi": 3617,
       "start": { "lat": 60.83, "lng": -148.87, "label": "AWCC, Portage, AK" },
-      "end": { "lat": 20.67, "lng": -103.35, "label": "Guadalajara, Mexico" },
+      "end": { "lat": 19.98, "lng": -102.28, "label": "Zamora, Mexico" },
       "bodyLengths": { "min": 65000000, "max": 83000000 },
-      "earlyPings": ["Glacier Island", "Seward"]
+      "waypoints": [
+        { "lat": 59.58, "lng": -133.69, "label": "Atlin, BC" },
+        { "lat": 52.83, "lng": -119.26, "label": "Valemount, BC" },
+        { "lat": 41.79, "lng": -110.54, "label": "Kemmerer, WY" },
+        { "lat": 37.27, "lng": -107.88, "label": "Durango, CO" },
+        { "lat": 34.13, "lng": -109.29, "label": "Springerville, AZ" },
+        { "lat": 20.67, "lng": -103.35, "label": "Guadalajara, Mexico" }
+      ]
     }
   ],
   "oldRecord": {

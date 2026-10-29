@@ -34,8 +34,8 @@
 	// Relief source bounds (equirectangular crop of Natural Earth SR_50M)
 	const RELIEF_BOUNDS = { west: -170, east: -50, north: 72, south: 5 };
 
-	// Full resolution for clean hillshade
-	const RELIEF_SCALE = 1;
+	// Render relief at 2.5x viewport so it stays pixel-crisp at max camera zoom
+	const RELIEF_SCALE = 0.4;
 
 	// Continental NA + Mexico + Central America (no Caribbean, no South America)
 	const NA_IDS = new Set([
@@ -53,6 +53,10 @@
 
 	const CITIES = [
 		{ name: 'Anchorage', lng: -149.90, lat: 61.22, anchor: 'start', dx: 6, dy: 4 },
+		{ name: 'Whitehorse', lng: -135.05, lat: 60.72, anchor: 'start', dx: 6, dy: 4 },
+		{ name: 'Calgary', lng: -114.07, lat: 51.05, anchor: 'start', dx: 6, dy: 4 },
+		{ name: 'Winnipeg', lng: -97.14, lat: 49.90, anchor: 'start', dx: 6, dy: 4 },
+		{ name: 'Toronto', lng: -79.38, lat: 43.65, anchor: 'start', dx: 6, dy: 4 },
 		{ name: 'Vancouver', lng: -123.12, lat: 49.28, anchor: 'end', dx: -6, dy: 4 },
 		{ name: 'Seattle', lng: -122.33, lat: 47.61, anchor: 'end', dx: -6, dy: 4 },
 		{ name: 'San Francisco', lng: -122.42, lat: 37.77, anchor: 'end', dx: -6, dy: 0 },
@@ -60,7 +64,6 @@
 		{ name: 'Denver', lng: -104.99, lat: 39.74, anchor: 'start', dx: 6, dy: 4 },
 		{ name: 'Chicago', lng: -87.63, lat: 41.88, anchor: 'start', dx: 6, dy: 4 },
 		{ name: 'New York', lng: -74.01, lat: 40.71, anchor: 'start', dx: 6, dy: 4 },
-		{ name: 'Houston', lng: -95.37, lat: 29.76, anchor: 'start', dx: 6, dy: 4 },
 		{ name: 'Mexico City', lng: -99.13, lat: 19.43, anchor: 'start', dx: 6, dy: 4 },
 		{ name: 'Guadalajara', lng: -103.35, lat: 20.67, anchor: 'end', dx: -6, dy: 4 },
 	];
@@ -136,19 +139,44 @@
 		const naBorders = naBordersRaw;
 
 		// Projection: conic equal area fitted to the land so it fills the frame
-		const pad = 10;
+		// On mobile, fit to the western route corridor so the west coast is larger
+		const pad = width < 600 ? 2 : 10;
+		const fitTarget = width < 600
+			? { type: 'Feature', geometry: { type: 'Polygon', coordinates: [[
+				[-155, 72], [-80, 72], [-80, 8], [-155, 8], [-155, 72]
+			]] } }
+			: { type: 'Feature', geometry: naLand };
+
 		const projection = d3
 			.geoConicEqualArea()
 			.center([0, 40])
 			.rotate([100, 0])
-			.parallels([25, 55])
-			.fitExtent(
-				[
-					[pad, pad],
-					[width - pad, height - pad]
-				],
-				{ type: 'Feature', geometry: naLand }
+			.parallels([25, 55]);
+
+		if (width < 600) {
+			// "Cover" fit: fill the container completely
+			// 1. Fit to extent (fills width, may leave vertical whitespace)
+			projection.fitExtent([[pad, pad], [width - pad, height - pad]], fitTarget);
+			// 2. If projected height < container, scale up to fill height
+			const b = d3.geoPath(projection).bounds(fitTarget);
+			const projH = b[1][1] - b[0][1];
+			const containerH = height - 2 * pad;
+			if (projH < containerH) {
+				const up = containerH / projH * 0.85;
+				projection.scale(projection.scale() * up);
+				// 3. Center horizontally, pin top vertically
+				const nb = d3.geoPath(projection).bounds(fitTarget);
+				const [tx, ty] = projection.translate();
+				const projW = nb[1][0] - nb[0][0];
+				const cx = (width - projW) / 2 - nb[0][0];
+				projection.translate([tx + cx, ty + (pad - nb[0][1])]);
+			}
+		} else {
+			projection.fitExtent(
+				[[pad, pad], [width - pad, height - pad]],
+				fitTarget
 			);
+		}
 
 		const path = d3.geoPath(projection);
 		const naLandPath = path(naLand);
@@ -157,33 +185,40 @@
 		function makeRoute(bird) {
 			const start = fallbackCoord(bird, 'start');
 			const end = fallbackCoord(bird, 'end');
-			const interp = d3.geoInterpolate(start, end);
-			const points = d3.range(0, 1.005, 0.005).map((t) => projection(interp(t)));
-			return { points, start, end, interp, bird };
+			const waypoints = bird.waypoints
+				? bird.waypoints.map((w) => [w.lng, w.lat])
+				: [];
+
+			// Build full coordinate list: start → waypoints → end
+			const allCoords = [start, ...waypoints, end];
+			const waypointData = bird.waypoints || [];
+
+			// Generate interpolated points along each segment
+			const segments = [];
+			for (let i = 0; i < allCoords.length - 1; i++) {
+				const segInterp = d3.geoInterpolate(allCoords[i], allCoords[i + 1]);
+				const steps = d3.range(0, 1, 0.02).map((t) => segInterp(t));
+				segments.push(steps);
+			}
+			// Add final point
+			segments[segments.length - 1].push(allCoords[allCoords.length - 1]);
+
+			// Flatten all segments into one point array
+			const allGeoPoints = segments.flat();
+			const points = allGeoPoints.map((p) => projection(p));
+
+			// Build a combined interpolator that walks along all segments
+			function interp(t) {
+				const totalSegs = allCoords.length - 1;
+				const seg = Math.min(Math.floor(t * totalSegs), totalSegs - 1);
+				const segT = (t * totalSegs) - seg;
+				return d3.geoInterpolate(allCoords[seg], allCoords[seg + 1])(segT);
+			}
+
+			return { points, allCoords, waypointData, start, end, interp, bird };
 		}
 
 		const recordRoute = makeRoute(recordBird);
-
-		// Dev check: great-circle distance sanity
-		if (typeof window !== 'undefined') {
-			const R = 6371;
-			const [lng1, lat1] = recordRoute.start;
-			const [lng2, lat2] = recordRoute.end;
-			const dLat = ((lat2 - lat1) * Math.PI) / 180;
-			const dLng = ((lng2 - lng1) * Math.PI) / 180;
-			const a =
-				Math.sin(dLat / 2) ** 2 +
-				Math.cos((lat1 * Math.PI) / 180) *
-					Math.cos((lat2 * Math.PI) / 180) *
-					Math.sin(dLng / 2) ** 2;
-			const gc = 2 * R * Math.asin(Math.sqrt(a));
-			const pctOff = Math.abs(gc - recordBird.distanceKm) / recordBird.distanceKm;
-			if (pctOff > 0.01) {
-				console.warn(
-					`[HummingbirdMap] Great-circle distance ${Math.round(gc)} km is ${(pctOff * 100).toFixed(1)}% off recorded ${recordBird.distanceKm} km (using fallback coords)`
-				);
-			}
-		}
 
 		return { naLand, naLandPath, naBorderPath, projection, path, recordRoute };
 	});
@@ -202,6 +237,45 @@
 		return mapState.projection(geoPos);
 	});
 
+	// t value where flightT reaches 1 (bird arrives)
+	const T_ARRIVAL = FLIGHT_FRAMES / TOTAL_FRAMES;
+
+	function cameraAt(tVal, ft, bp, w, h) {
+		const mapCenter = [w / 2, h / 2];
+		const ZOOM = 2.5;
+
+		if (ft < 1) {
+			// Zoomed in, following bird
+			return { cx: bp[0], cy: bp[1], scale: ZOOM };
+		} else {
+			// Bird has arrived — ease out during hold frames
+			const holdProgress = (tVal - T_ARRIVAL) / (1 - T_ARRIVAL);
+			const p = d3.easeCubicInOut(Math.min(holdProgress, 1));
+			return {
+				cx: bp[0] + (mapCenter[0] - bp[0]) * p,
+				cy: bp[1] + (mapCenter[1] - bp[1]) * p,
+				scale: ZOOM + (1 - ZOOM) * p
+			};
+		}
+	}
+
+	const MOBILE_IDLE_ZOOM = 1.15;
+	const camera = $derived.by(() => {
+		if (!mapState || !birdPos) return { cx: width / 2, cy: height / 2, scale: 1 };
+		// Show overview before animation starts — slight zoom on mobile
+		if (!playing && t === 0) {
+			if (width < 600) {
+				return { cx: width / 2, cy: height / 2, scale: MOBILE_IDLE_ZOOM };
+			}
+			return { cx: width / 2, cy: height / 2, scale: 1 };
+		}
+		return cameraAt(t, flightT, birdPos, width, height);
+	});
+
+	const cameraTransform = $derived(
+		`translate(${width / 2}, ${height / 2}) scale(${camera.scale}) translate(${-camera.cx}, ${-camera.cy})`
+	);
+
 	const birdAngle = $derived.by(() => {
 		if (!mapState) return 0;
 		const interp = mapState.recordRoute.interp;
@@ -216,6 +290,20 @@
 	const recordStartPos = $derived(mapState?.projection(fallbackCoord(recordBird, 'start')) ?? null);
 	const recordEndPos = $derived(mapState?.projection(fallbackCoord(recordBird, 'end')) ?? null);
 	const gulfLabelPos = $derived(mapState?.projection([-145, 53]) ?? null);
+	const startLabelPos = $derived(mapState?.projection([-158, 53]) ?? null);
+
+	// Waypoint positions with their t-values (evenly spaced across segments)
+	const waypointPositions = $derived.by(() => {
+		if (!mapState) return [];
+		const route = mapState.recordRoute;
+		const totalSegs = route.allCoords.length - 1;
+		return route.waypointData.map((wp, i) => {
+			const pos = mapState.projection([wp.lng, wp.lat]);
+			// Waypoint i is at t = (i + 1) / totalSegs
+			const wpT = (i + 1) / totalSegs;
+			return pos ? { ...wp, x: pos[0], y: pos[1], t: wpT } : null;
+		}).filter(Boolean);
+	});
 
 	const cityPositions = $derived.by(() => {
 		if (!mapState) return [];
@@ -230,6 +318,13 @@
 	const counterText = $derived.by(() => {
 		if (flightT >= 1) return `${recordBird.distanceMi.toLocaleString()} miles, at least`;
 		return `${counterMi.toLocaleString()} mi`;
+	});
+
+	// Midpoint along the route curve (for end-state label)
+	const routeMidPos = $derived.by(() => {
+		if (!mapState) return null;
+		const geoMid = mapState.recordRoute.interp(0.5);
+		return mapState.projection(geoMid);
 	});
 
 	const partialRecordPath = $derived.by(() => {
@@ -326,8 +421,8 @@
 				const newW = Math.round(entry.contentRect.width);
 				if (newW !== width) {
 					width = newW;
-					// Landscape on desktop, taller on mobile
-					const ratio = newW >= 900 ? 0.56 : newW >= 600 ? 0.7 : 0.9;
+					// Landscape on desktop, portrait on mobile
+					const ratio = newW >= 900 ? 0.56 : newW >= 600 ? 0.7 : 1.6;
 					height = Math.round(Math.max(newW * ratio, 400));
 				}
 			}
@@ -387,13 +482,22 @@
 	}
 </script>
 
-<div class="hummingbird-map" bind:this={containerEl} style:height="{height}px">
+<div class="hummingbird-map" bind:this={containerEl}>
 	{#if mapState}
+		<!-- Controls: above map on mobile, overlaid at bottom on desktop -->
+		<div class="controls">
+			{#if !playing && t === 0}
+				<span class="controls-hint">Press play to follow the flight</span>
+				<button class="pill play-btn" onclick={play} aria-label="Play"><svg width="14" height="16" viewBox="0 0 14 16" fill="currentColor"><polygon points="0,0 14,8 0,16" /></svg></button>
+			{:else if !playing && t >= 1}
+				<button class="pill play-btn" onclick={replay} aria-label="Replay"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v4h4" /><path d="M3 6a6 6 0 1 1 1 7" /></svg></button>
+			{:else if playing}
+				<button class="pill play-btn" onclick={stop} aria-label="Pause"><svg width="12" height="14" viewBox="0 0 12 14" fill="currentColor"><rect x="0" y="0" width="4" height="14" /><rect x="8" y="0" width="4" height="14" /></svg></button>
+			{/if}
+		</div>
 		<svg
 			bind:this={svgEl}
 			viewBox="0 0 {width} {height}"
-			{width}
-			{height}
 			role="img"
 			aria-label="Map showing the record Rufous Hummingbird migration route from Alaska toward Mexico"
 		>
@@ -401,134 +505,216 @@
 				<clipPath id="land-clip">
 					<path d={mapState.naLandPath} />
 				</clipPath>
+				<clipPath id="viewport-clip">
+					<rect x="0" y="0" {width} {height} />
+				</clipPath>
+				{#if width < 600}
+					<linearGradient id="east-fade" x1="0.5" x2="1" y1="0" y2="0">
+						<stop offset="0%" stop-color="var(--bg, #fffdf8)" stop-opacity="0" />
+						<stop offset="100%" stop-color="var(--bg, #fffdf8)" stop-opacity="0.85" />
+					</linearGradient>
+					<linearGradient id="top-fade" x1="0" x2="0" y1="0" y2="0.15">
+						<stop offset="0%" stop-color="var(--bg, #fffdf8)" stop-opacity="0.75" />
+						<stop offset="100%" stop-color="var(--bg, #fffdf8)" stop-opacity="0" />
+					</linearGradient>
+				{/if}
 			</defs>
 
-			<!-- Background matches page -->
+			<!-- Background matches page (fixed) -->
 			<rect x="0" y="0" {width} {height} fill="var(--bg, #fffdf8)" />
 
-			<!-- Base land fill (white) -->
-			<path d={mapState.naLandPath} fill="#ffffff" />
+			<!-- Camera group: pans and zooms to follow the bird -->
+			<g clip-path="url(#viewport-clip)" transform={cameraTransform}>
+				<!-- Base land fill (white) -->
+				<path d={mapState.naLandPath} fill="#ffffff" />
 
-			<!-- Shaded relief overlay (clipped to NA land) -->
-			{#if reliefDataUrl}
-				<image
-					href={reliefDataUrl}
-					x="0" y="0"
-					{width} {height}
-					clip-path="url(#land-clip)"
-					preserveAspectRatio="none"
-				/>
-			{/if}
-
-			<!-- Country borders -->
-			<path
-				d={mapState.naBorderPath}
-				fill="none"
-				stroke="#9a9080"
-				stroke-width="1"
-				stroke-linejoin="round"
-			/>
-
-			<!-- Coastline -->
-			<path
-				d={mapState.naLandPath}
-				fill="none"
-				stroke="#6a6050"
-				stroke-width="1.25"
-				stroke-linejoin="round"
-			/>
-
-			<!-- Water labels -->
-			{#if gulfLabelPos}
-				<text
-					x={gulfLabelPos[0]}
-					y={gulfLabelPos[1]}
-					class="water-label"
-					text-anchor="middle"
-				>Gulf of Alaska</text>
-			{/if}
-
-			<!-- Cities -->
-			{#each cityPositions as city}
-				<circle cx={city.x} cy={city.y} r="2" fill="#5a5550" />
-				<text
-					x={city.x + city.dx}
-					y={city.y + city.dy}
-					class="city-label"
-					text-anchor={city.anchor}
-				>{city.name}</text>
-			{/each}
-
-			<!-- Record route (cobalt, drawn progressively) -->
-			{#if partialRecordPath}
-				<path
-					d={partialRecordPath}
-					fill="none"
-					stroke="var(--accent, #3b4fd9)"
-					stroke-width="2.5"
-					stroke-linecap="round"
-				/>
-			{/if}
-
-			<!-- Start dot (always visible) -->
-			{#if recordStartPos}
-				<circle cx={recordStartPos[0]} cy={recordStartPos[1]} r="5" fill="var(--accent, #3b4fd9)" />
-				<circle cx={recordStartPos[0]} cy={recordStartPos[1]} r="5" fill="none" stroke="#fff" stroke-width="1.5" />
-			{/if}
-
-			<!-- End dot (appears when bird arrives) -->
-			{#if flightT >= 1 && recordEndPos}
-				<circle cx={recordEndPos[0]} cy={recordEndPos[1]} r="5" fill="var(--accent, #3b4fd9)" />
-				<circle cx={recordEndPos[0]} cy={recordEndPos[1]} r="5" fill="none" stroke="#fff" stroke-width="1.5" />
-				<text x={recordEndPos[0]} y={recordEndPos[1] + 18} class="map-label" text-anchor="middle" fill="var(--accent, #3b4fd9)" font-weight="700">
-					{recordBird.end.label}
-				</text>
-			{/if}
-
-
-			<!-- Bird sprite -->
-			{#if birdPos}
-				<g transform="translate({birdPos[0]}, {birdPos[1]}) {flightT < 1 ? `rotate(${birdAngle})` : ''}">
+				<!-- Shaded relief overlay (clipped to NA land) -->
+				{#if reliefDataUrl}
 					<image
-						href={framePaths[frameIndex]}
-						x="-20"
-						y="-10"
-						width="40"
-						height="20"
+						href={reliefDataUrl}
+						x="0" y="0"
+						{width} {height}
+						clip-path="url(#land-clip)"
+						preserveAspectRatio="none"
 					/>
-				</g>
+				{/if}
+
+				<!-- Country borders -->
+				<path
+					d={mapState.naBorderPath}
+					fill="none"
+					stroke="#9a9080"
+					stroke-width={1 / camera.scale}
+					stroke-linejoin="round"
+				/>
+
+				<!-- Coastline -->
+				<path
+					d={mapState.naLandPath}
+					fill="none"
+					stroke="#6a6050"
+					stroke-width={1.25 / camera.scale}
+					stroke-linejoin="round"
+				/>
+
+				<!-- Water labels -->
+				{#if gulfLabelPos}
+					{#if width >= 600}
+						<text
+							x={gulfLabelPos[0]}
+							y={gulfLabelPos[1]}
+							class="water-label"
+							text-anchor="middle"
+							font-size="{12 / camera.scale}px"
+						>Gulf of Alaska</text>
+					{:else}
+						<text
+							x={gulfLabelPos[0]}
+							y={gulfLabelPos[1] - 6 / camera.scale}
+							class="water-label"
+							text-anchor="middle"
+							font-size="{10 / camera.scale}px"
+						>Gulf of</text>
+						<text
+							x={gulfLabelPos[0]}
+							y={gulfLabelPos[1] + 6 / camera.scale}
+							class="water-label"
+							text-anchor="middle"
+							font-size="{10 / camera.scale}px"
+						>Alaska</text>
+					{/if}
+				{/if}
+
+				<!-- Cities -->
+				{#each cityPositions as city}
+					<circle cx={city.x} cy={city.y} r={2 / camera.scale} fill="#5a5550" />
+					<!-- White halo to knock out map lines behind label -->
+					<text
+						x={city.x + city.dx / camera.scale}
+						y={city.y + city.dy / camera.scale}
+						class="city-label-halo"
+						text-anchor={city.anchor}
+						font-size="{10 / camera.scale}px"
+						stroke-width={3 / camera.scale}
+					>{city.name}</text>
+					<text
+						x={city.x + city.dx / camera.scale}
+						y={city.y + city.dy / camera.scale}
+						class="city-label"
+						text-anchor={city.anchor}
+						font-size="{10 / camera.scale}px"
+					>{city.name}</text>
+				{/each}
+
+				<!-- Record route (cobalt, drawn progressively) -->
+				{#if partialRecordPath}
+					<path
+						d={partialRecordPath}
+						fill="none"
+						stroke="var(--accent, #3b4fd9)"
+						stroke-width={3 / camera.scale}
+						stroke-linecap="round"
+					/>
+				{/if}
+
+				<!-- Start dot (always visible) -->
+				{#if recordStartPos}
+					<circle cx={recordStartPos[0]} cy={recordStartPos[1]} r={7 / camera.scale} fill="var(--brick, #b5523b)" />
+					<circle cx={recordStartPos[0]} cy={recordStartPos[1]} r={7 / camera.scale} fill="none" stroke="#fff" stroke-width={2 / camera.scale} />
+				{/if}
+
+				<!-- Start label with curved arrow (in the Gulf of Alaska) -->
+				{#if recordStartPos && startLabelPos}
+					{@const s = Math.min(width / 800, 1)}
+					{#if width >= 600}
+						<text x={startLabelPos[0]} y={startLabelPos[1]} class="endpoint-label" text-anchor="end" font-size="{12 / camera.scale}px" font-weight="700" fill="var(--brick, #b5523b)">Alaska Wildlife Conservation Center</text>
+						<text x={startLabelPos[0]} y={startLabelPos[1] + 14 / camera.scale} class="endpoint-label" text-anchor="end" font-size="{10 / camera.scale}px" fill="var(--brick, #b5523b)">Portage, AK</text>
+					{:else}
+						<text x={startLabelPos[0]} y={startLabelPos[1]} class="endpoint-label" text-anchor="end" font-size="{11 / camera.scale}px" font-weight="700" fill="var(--brick, #b5523b)">AWCC</text>
+						<text x={startLabelPos[0]} y={startLabelPos[1] + 12 / camera.scale} class="endpoint-label" text-anchor="end" font-size="{9 / camera.scale}px" fill="var(--brick, #b5523b)">Portage, AK</text>
+					{/if}
+					<!-- Curved arrow: offsets scaled by viewport ratio for consistent proportions -->
+					<path
+						d="M {startLabelPos[0] + 4 * s} {startLabelPos[1] + 18 * s} C {startLabelPos[0] + 40 * s} {startLabelPos[1] + 35 * s} {recordStartPos[0]} {recordStartPos[1] + 50 * s} {recordStartPos[0]} {recordStartPos[1] + 16 * s}"
+						fill="none"
+						stroke="var(--brick, #b5523b)"
+						stroke-width="1.25"
+						vector-effect="non-scaling-stroke"
+					/>
+					<!-- Arrowhead pointing north, counter-scaled for constant visual size -->
+					<g transform="translate({recordStartPos[0]}, {recordStartPos[1] + 16 * s}) scale({1 / camera.scale})">
+						<polygon points="0,-5 -4,5 4,5" fill="var(--brick, #b5523b)" />
+					</g>
+				{/if}
+
+				<!-- Waypoint dots (appear as bird passes) -->
+				{#each waypointPositions as wp}
+					{#if flightT >= wp.t}
+						<circle cx={wp.x} cy={wp.y} r={5.5 / camera.scale} fill="var(--accent, #3b4fd9)" />
+						<circle cx={wp.x} cy={wp.y} r={5.5 / camera.scale} fill="none" stroke="#fff" stroke-width={1.5 / camera.scale} />
+						<text x={wp.x + 10 / camera.scale} y={wp.y + 5 / camera.scale} class="waypoint-label-halo" font-size="{13 / camera.scale}px" font-weight="700" stroke-width={3 / camera.scale}>{wp.label}</text>
+						<text x={wp.x + 10 / camera.scale} y={wp.y + 5 / camera.scale} class="waypoint-label" font-size="{13 / camera.scale}px" font-weight="700">{wp.label}</text>
+					{/if}
+				{/each}
+
+				<!-- End dot (appears when bird arrives) -->
+				{#if flightT >= 1 && recordEndPos}
+					<circle cx={recordEndPos[0]} cy={recordEndPos[1]} r={8 / camera.scale} fill="var(--brick, #b5523b)" />
+					<circle cx={recordEndPos[0]} cy={recordEndPos[1]} r={8 / camera.scale} fill="none" stroke="#fff" stroke-width={2 / camera.scale} />
+					<text x={recordEndPos[0]} y={recordEndPos[1] + 24 / camera.scale} class="endpoint-label" text-anchor="middle" fill="var(--brick, #b5523b)" font-weight="800" font-size="{15 / camera.scale}px">
+						{recordBird.end.label}
+					</text>
+				{/if}
+
+				<!-- Distance annotations (appear at end) -->
+				{#if flightT >= 1 && recordStartPos && recordEndPos}
+					<!-- Straight-line dotted line -->
+					<line
+						x1={recordStartPos[0]} y1={recordStartPos[1]}
+						x2={recordEndPos[0]} y2={recordEndPos[1]}
+						stroke="var(--ink, #22211f)"
+						stroke-width="1.5"
+						stroke-dasharray="4 3"
+						vector-effect="non-scaling-stroke"
+						opacity="0.45"
+					/>
+					<!-- Straight-line label -->
+					<text
+						x={(recordStartPos[0] + recordEndPos[0]) / 2 + 12 / camera.scale}
+						y={(recordStartPos[1] + recordEndPos[1]) / 2}
+						class="distance-label"
+						font-size="{11 / camera.scale}px"
+						font-weight="700"
+					>{recordBird.distanceKm.toLocaleString()} km straight line</text>
+
+				{/if}
+
+				<!-- Bird sprite -->
+				{#if birdPos}
+					<g transform="translate({birdPos[0]}, {birdPos[1]}) scale({1 / camera.scale}) {flightT < 1 ? `rotate(${birdAngle})` : ''}">
+						<image
+							href={framePaths[frameIndex]}
+							x="-20"
+							y="-10"
+							width="40"
+							height="20"
+						/>
+					</g>
+				{/if}
+			</g>
+
+			<!-- Fade edges on mobile -->
+			{#if width < 600}
+				<rect x={width * 0.5} y="0" width={width * 0.5} {height} fill="url(#east-fade)" />
+				<rect x="0" y="0" {width} height={height * 0.15} fill="url(#top-fade)" />
 			{/if}
 
-			<!-- Counter -->
-			<text x={width - 16} y={height - 50} class="counter" text-anchor="end">
-				{counterText}
-			</text>
-			<text x={width - 16} y={height - 30} class="counter-km" text-anchor="end">
-				{counterKm.toLocaleString()} km
-			</text>
-
-			<!-- Disclaimers -->
-			<text x={16} y={height - 30} class="disclaimer">
-				Straight-line minimum. The real path was longer and isn't known.
-			</text>
-			<text x={16} y={height - 14} class="disclaimer">Time not to scale</text>
-
-			<!-- Source -->
-			<text x={width - 16} y={height - 10} class="source" text-anchor="end">
+			<!-- Fixed HUD (not transformed by camera) -->
+			<text x={width - 16} y={height - 14} class="source" text-anchor="end">
 				{meta.source}
 			</text>
 		</svg>
 
-		<!-- Controls -->
-		<div class="controls">
-			{#if !playing && t === 0}
-				<button class="pill play-btn" onclick={play}>Play</button>
-			{:else if !playing && t >= 1}
-				<button class="pill play-btn" onclick={replay}>Replay</button>
-			{:else if playing}
-				<button class="pill play-btn" onclick={stop}>Pause</button>
-			{/if}
-		</div>
 	{:else}
 		<div class="loading">Loading map&hellip;</div>
 	{/if}
@@ -540,6 +726,9 @@
 		width: 100%;
 		background: var(--bg, #fffdf8);
 		overflow: hidden;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
 	}
 
 	svg {
@@ -548,15 +737,34 @@
 		height: auto;
 	}
 
+	.waypoint-label-halo {
+		font-family: var(--font-body, 'Karla', sans-serif);
+		fill: none;
+		stroke: var(--bg, #fffdf8);
+		paint-order: stroke;
+	}
+
+	.waypoint-label {
+		font-family: var(--font-body, 'Karla', sans-serif);
+		fill: var(--accent, #3b4fd9);
+	}
+
+	.city-label-halo {
+		font-family: var(--font-body, 'Karla', sans-serif);
+		font-weight: 700;
+		fill: none;
+		stroke: #ffffff;
+		stroke-linejoin: round;
+	}
+
 	.city-label {
 		font-family: var(--font-body, 'Karla', sans-serif);
-		font-size: 10px;
+		font-weight: 700;
 		fill: #5a5550;
 	}
 
 	.water-label {
 		font-family: var(--font-body, 'Karla', sans-serif);
-		font-size: 12px;
 		font-style: italic;
 		fill: #8a9aaa;
 		letter-spacing: 0.08em;
@@ -578,8 +786,22 @@
 
 	.map-label {
 		font-family: var(--font-body, 'Karla', sans-serif);
-		font-size: 11px;
 		fill: #4a4540;
+	}
+
+	.distance-label {
+		font-family: var(--font-body, 'Karla', sans-serif);
+		fill: var(--ink, #22211f);
+		opacity: 0.55;
+	}
+
+	.route-distance {
+		fill: var(--accent, #3b4fd9);
+		opacity: 0.8;
+	}
+
+	.endpoint-label {
+		font-family: var(--font-body, 'Karla', sans-serif);
 	}
 
 	.disclaimer {
@@ -597,18 +819,40 @@
 	}
 
 	.controls {
-		position: absolute;
-		bottom: 12px;
-		left: 50%;
-		transform: translateX(-50%);
+		text-align: center;
+		padding: 12px 0 16px;
+		order: -1;
+	}
+
+	@media (min-width: 600px) {
+		.controls {
+			position: absolute;
+			bottom: 12px;
+			left: 50%;
+			transform: translateX(-50%);
+			padding: 0;
+			order: unset;
+		}
+	}
+
+	.controls-hint {
+		display: block;
+		font-family: var(--font-body, 'Karla', sans-serif);
+		font-size: 0.8rem;
+		color: #4a4540;
+		opacity: 0.6;
+		margin-bottom: 10px;
 	}
 
 	.play-btn {
 		font-family: var(--font-body, 'Karla', sans-serif);
 		font-size: 0.875rem;
 		font-weight: 700;
-		padding: 8px 24px;
-		height: 40px;
+		padding: 6px 16px;
+		height: 32px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
 		border-radius: var(--radius-pill, 999px);
 		border: 1.5px solid #4a4540;
 		background: rgba(242, 238, 228, 0.9);
