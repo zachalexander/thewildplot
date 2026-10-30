@@ -67,6 +67,7 @@
 		height: 100%;
 		object-fit: cover;
 		object-position: 60% 35%;
+		transform: scale(0.92);
 		pointer-events: none;
 	}
 
@@ -139,5 +140,12 @@
 	.tile-date {
 		font-size: 0.9375rem;
 		font-weight: 500;
+	}
+
+	@media (max-width: 640px) {
+		.tile-cover {
+			transform: scale(0.92);
+			object-position: center center;
+		}
 	}
 </style>

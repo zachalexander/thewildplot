@@ -5,8 +5,8 @@ export const hummingbird = {
 		'A Rufous Hummingbird weighing less than a nickel was tracked flying 5,821 km from Alaska toward Mexico — a new record for the smallest migrating bird ever measured.',
 	date: '2026-10-26',
 	tags: ['migration', 'birds', 'distance'],
-	color: '#f6f0e2',
-	ink: '#22211f',
+	color: '#23304a',
+	ink: '#f6f0e2',
 	cover: '/art/hummingbird/cover.png',
 	status: 'draft',
 	featured: false
