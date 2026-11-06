@@ -90,7 +90,7 @@
 			<video bind:this={videoEl} loop muted playsinline aria-label="A rufous hummingbird hovering at a backyard feeder">
 				<source src="/art/hummingbird/rufous-feeder.webm" type="video/webm" />
 			</video>
-			<span class="hand-label">Average length of Rufous Hummingbird<br />(2.8–3.5 inches)</span>
+			<span class="hand-label"><span class="label-full">Average length of Rufous Hummingbird<br />(2.8–3.5 inches)</span><span class="label-short">Avg. length: 2.8–3.5 in.</span></span>
 		</div>
 		<p class="fig-label">Fig. 1 — Rufous hummingbird, life-size</p>
 	</section>
@@ -324,6 +324,8 @@
 		text-align: center;
 	}
 
+	.label-short { display: none; }
+
 	@media (max-width: 400px) {
 		.hand-scale {
 			padding: 0.75rem 0.5rem 0.5rem;
@@ -338,9 +340,12 @@
 		}
 
 		.hand-label {
-			top: 4%;
+			top: 5.5%;
 			font-size: 0.5rem;
 		}
+
+		.label-full { display: none; }
+		.label-short { display: inline; }
 	}
 
 	/* 5. Wavy divider */
