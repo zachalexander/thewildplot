@@ -28,3 +28,6 @@ data/
 
 # Keep generated data in static/
 !static/data/
+
+# Writing Desk export snapshot (scripts/desk-export.js reads it)
+/.desk
