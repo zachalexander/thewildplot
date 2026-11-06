@@ -223,7 +223,7 @@
 		border-radius: 4px;
 	}
 
-.hand-scale {
+	.hand-scale {
 		position: relative;
 		display: flex;
 		align-items: center;
@@ -242,13 +242,13 @@
 	.hand-scale video {
 		width: 48%;
 		flex-shrink: 0;
-		margin-left: -10%;
+		margin-left: -6%;
 	}
 
 	.tape {
 		position: absolute;
-		width: 48px;
-		height: 16px;
+		width: clamp(28px, 6vw, 48px);
+		height: clamp(10px, 2vw, 16px);
 		background: rgba(213, 207, 195, 0.55);
 		border: 1px solid rgba(0, 0, 0, 0.08);
 		z-index: 2;
@@ -266,10 +266,27 @@
 		left: 3%;
 		font-family: var(--font-body, 'Karla', sans-serif);
 		font-weight: 700;
-		font-size: 0.8125rem;
+		font-size: clamp(0.625rem, 2vw, 0.8125rem);
 		color: #e0301e;
 		max-width: 8em;
 		line-height: 1.3;
+	}
+
+	@media (max-width: 400px) {
+		.hand-scale {
+			flex-direction: column;
+			padding: 1rem 0.75rem 0.5rem;
+		}
+
+		.hand-scale img {
+			width: 80%;
+		}
+
+		.hand-scale video {
+			width: 70%;
+			margin-left: 0;
+			margin-top: -8%;
+		}
 	}
 
 	/* 5. Wavy divider */
