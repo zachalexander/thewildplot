@@ -71,7 +71,7 @@
 			<video autoplay loop muted playsinline aria-label="A rufous hummingbird hovering at a backyard feeder">
 				<source src="/art/hummingbird/rufous-feeder.webm" type="video/webm" />
 			</video>
-			<span class="hand-label">Average length of Rufous Hummingbird</span>
+			<span class="hand-label">Average length of Rufous Hummingbird<br />(2.8–3.5 inches)</span>
 		</div>
 	</section>
 
@@ -210,7 +210,7 @@
 
 	/* 4. Taped-in drawing */
 	.drawing {
-		max-width: 600px;
+		max-width: 800px;
 		margin: 0 auto;
 		padding: 1rem var(--gutter, 16px) 1rem;
 	}
@@ -229,10 +229,11 @@
 		align-items: center;
 		justify-content: center;
 		gap: 0;
-		transform: rotate(-1.2deg);
+		transform: none;
 		background: #fffdf8;
 		padding: 1.25rem 1rem 0.75rem;
 		border-radius: 2px;
+		border: 1px solid rgba(0, 0, 0, 0.08);
 	}
 
 	.hand-scale img {
@@ -262,14 +263,16 @@
 
 	.hand-label {
 		position: absolute;
-		top: 6%;
-		left: 3%;
+		top: 6.5%;
+		left: 50%;
+		transform: translateX(-50%);
 		font-family: var(--font-body, 'Karla', sans-serif);
 		font-weight: 700;
-		font-size: clamp(0.625rem, 2vw, 0.8125rem);
+		font-size: clamp(0.625rem, 2.5vw, 1rem);
 		color: #e0301e;
-		max-width: 8em;
+		white-space: pre-line;
 		line-height: 1.3;
+		text-align: center;
 	}
 
 	@media (max-width: 400px) {
@@ -331,7 +334,7 @@
 	.context:last-of-type  { padding-top: 1rem; padding-bottom: 3rem; }
 
 	.context-inner {
-		max-width: 600px;
+		max-width: 660px;
 		margin: 0 auto;
 	}
 
@@ -344,9 +347,9 @@
 
 	.context p {
 		font-family: var(--font-body, 'Karla', sans-serif);
-		font-size: 1rem;
-		line-height: 1.6;
-		margin: 0 0 0.75rem;
+		font-size: 1.1875rem;
+		line-height: 1.65;
+		margin: 0 0 1em;
 		color: var(--text, #16151a);
 	}
 
