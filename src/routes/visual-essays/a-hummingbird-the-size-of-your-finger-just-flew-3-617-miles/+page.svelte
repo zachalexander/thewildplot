@@ -503,6 +503,20 @@
 
 	@media (max-width: 480px) {
 		.map-section::before { display: none; }
+
+		.story-header { padding: 1.25rem var(--gutter, 16px) 0.5rem; }
+
+		.context { padding: 1rem var(--gutter, 16px) 1.5rem; }
+		.context:nth-of-type(2) { padding-top: 0.75rem; padding-bottom: 1.5rem; }
+		.context:nth-of-type(3) { padding-top: 1.25rem; padding-bottom: 1rem; }
+		.context:last-of-type  { padding-top: 0.5rem; padding-bottom: 1.5rem; }
+
+		.context p { font-size: 1.0625rem; line-height: 1.55; }
+
+		.drawing { padding: 0.5rem var(--gutter, 16px) 0.5rem; }
+		.map-section { padding-bottom: 1rem; }
+		.sources { padding: 1.25rem var(--gutter, 16px) 2.5rem; }
+		.sources-inner { padding: 1rem 1.125rem; }
 	}
 
 	@media (prefers-reduced-motion: reduce) {
