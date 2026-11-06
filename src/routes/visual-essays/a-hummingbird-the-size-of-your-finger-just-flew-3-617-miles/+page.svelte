@@ -277,18 +277,20 @@
 
 	@media (max-width: 400px) {
 		.hand-scale {
-			flex-direction: column;
-			padding: 1rem 0.75rem 0.5rem;
+			padding: 0.75rem 0.5rem 0.5rem;
 		}
 
 		.hand-scale img {
-			width: 80%;
+			width: 42%;
 		}
 
 		.hand-scale video {
-			width: 70%;
-			margin-left: 0;
-			margin-top: -8%;
+			width: 40%;
+		}
+
+		.hand-label {
+			top: 4%;
+			font-size: 0.5rem;
 		}
 	}
 
