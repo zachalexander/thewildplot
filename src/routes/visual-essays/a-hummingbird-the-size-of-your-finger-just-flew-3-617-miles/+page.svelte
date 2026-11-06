@@ -70,7 +70,6 @@
 			/>
 			<video autoplay loop muted playsinline aria-label="A rufous hummingbird hovering at a backyard feeder">
 				<source src="/art/hummingbird/rufous-feeder.webm" type="video/webm" />
-				<source src="/art/hummingbird/rufous-feeder.mov" type="video/quicktime" />
 			</video>
 			<span class="hand-label">Average length of Rufous Hummingbird</span>
 		</div>
