@@ -12,6 +12,7 @@
 	let t = $state(0);
 	let playing = $state(false);
 	let reducedMotion = $state(false);
+	let videoEl = $state(null);
 
 	onMount(() => {
 		reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -20,6 +21,21 @@
 		const tParam = new URL(window.location.href).searchParams.get('t');
 		if (tParam !== null) {
 			t = Math.max(0, Math.min(1, parseFloat(tParam)));
+		}
+
+		if (videoEl) {
+			const observer = new IntersectionObserver(
+				([entry]) => {
+					if (entry.isIntersecting) {
+						videoEl.play();
+					} else {
+						videoEl.pause();
+					}
+				},
+				{ threshold: 0.25 }
+			);
+			observer.observe(videoEl);
+			return () => observer.disconnect();
 		}
 	});
 </script>
@@ -35,6 +51,9 @@
 		<div class="header-inner">
 			<p class="eyebrow">Migration &middot; Birds</p>
 			<h1>A hummingbird the size of your finger just flew 3,617 miles</h1>
+			<svg class="title-underline" viewBox="0 0 400 6" preserveAspectRatio="none" aria-hidden="true">
+				<path d="M0,3 C20,0 40,6 60,3 C80,0 100,6 120,3 C140,0 160,6 180,3 C200,0 220,6 240,3 C260,0 280,6 300,3 C320,0 340,6 360,3 C380,0 400,6 400,3" fill="none" stroke="var(--ink, #22211f)" stroke-width="2" stroke-linecap="round" />
+			</svg>
 			<p class="dek">
 				A burnt-red hummingbird hovers at a feeder in a quiet backyard in Colorado.
 				It is a hot July afternoon and the bird is fueling up on the free sugar water.
@@ -68,11 +87,12 @@
 				src="/art/hummingbird/hand-scale.png"
 				alt="A rufous hummingbird drawn life-size beside an open hand — about the length of a middle finger"
 			/>
-			<video autoplay loop muted playsinline aria-label="A rufous hummingbird hovering at a backyard feeder">
+			<video bind:this={videoEl} loop muted playsinline aria-label="A rufous hummingbird hovering at a backyard feeder">
 				<source src="/art/hummingbird/rufous-feeder.webm" type="video/webm" />
 			</video>
 			<span class="hand-label">Average length of Rufous Hummingbird<br />(2.8–3.5 inches)</span>
 		</div>
+		<p class="fig-label">Fig. 1 — Rufous hummingbird, life-size</p>
 	</section>
 
 	<section class="context">
@@ -105,10 +125,12 @@
 			bind:playing
 			{reducedMotion}
 		/>
+		<p class="fig-label">Fig. 2 — Migration route, Alaska to Mexico</p>
 	</section>
 
 	<section class="context">
 		<div class="context-inner">
+			<aside class="pull-number" aria-hidden="true">3,617<span>miles</span></aside>
 			<p>
 				You may be thinking, so what. Three thousand-odd miles seems a long way, but I have
 				crossed that distance in a plane, asleep, in one afternoon.
@@ -141,6 +163,8 @@
 
 	<section class="sources">
 		<div class="sources-inner">
+			<span class="tape tape-src-tl"></span>
+			<span class="tape tape-src-tr"></span>
 			<h3>Sources</h3>
 			<ul>
 				<li>{meta.source} — {meta.sourceNote}</li>
@@ -192,9 +216,34 @@
 
 	.byline {
 		font-family: var(--font-body, 'Karla', sans-serif);
-		font-size: 0.875rem;
-		color: var(--text-light, #777);
-		margin-top: 1rem;
+		font-size: 0.75rem;
+		text-transform: uppercase;
+		letter-spacing: 0.12em;
+		color: var(--text-muted, #444);
+		margin-top: 1.25rem;
+		border: 1px solid rgba(0, 0, 0, 0.15);
+		display: inline-block;
+		padding: 0.25em 0.6em;
+		transform: rotate(-1deg);
+	}
+
+	/* Title underline */
+	.title-underline {
+		display: block;
+		width: 80%;
+		height: 6px;
+		margin: 0.25rem 0 0;
+		opacity: 0.25;
+	}
+
+	/* Figure labels */
+	.fig-label {
+		font-family: var(--font-body, 'Karla', sans-serif);
+		font-style: italic;
+		font-size: 0.8125rem;
+		color: var(--text-muted, #444);
+		text-align: center;
+		margin: 0.5rem 0 0;
 	}
 
 	/* 3. Drop cap on first paragraph */
@@ -356,14 +405,25 @@
 	}
 
 	.sources {
+		max-width: 660px;
+		margin: 0 auto;
 		padding: 2rem var(--gutter, 16px) 4rem;
 		border-top: none;
 	}
 
 	.sources-inner {
+		position: relative;
 		max-width: 600px;
 		margin: 0 auto;
+		background: #fffdf8;
+		border: 1px solid rgba(0, 0, 0, 0.08);
+		border-radius: 2px;
+		padding: 1.25rem 1.5rem;
+		transform: rotate(0.5deg);
 	}
+
+	.tape-src-tl { top: -7px; left: 12px; transform: rotate(-12deg); }
+	.tape-src-tr { top: -7px; right: 12px; transform: rotate(10deg); }
 
 	.sources h3 {
 		font-family: var(--font-display, 'Bricolage Grotesque', sans-serif);
@@ -389,6 +449,56 @@
 		font-size: 0.75rem;
 		color: var(--text-light, #777);
 		margin-top: 0.75rem;
+	}
+
+	/* Pull number in margin */
+	.pull-number {
+		font-family: var(--font-display, 'Bricolage Grotesque', sans-serif);
+		font-weight: 800;
+		font-size: 3rem;
+		color: var(--ink, #22211f);
+		opacity: 0.12;
+		line-height: 1;
+		text-align: right;
+		position: absolute;
+		right: calc(100% + 1.5rem);
+		top: 2rem;
+	}
+
+	.pull-number span {
+		display: block;
+		font-size: 0.4em;
+		font-weight: 400;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+	}
+
+	.context:nth-of-type(3) .context-inner {
+		position: relative;
+	}
+
+	/* Page fold line (notebook spine) */
+	.story::after {
+		content: '';
+		position: fixed;
+		top: 0;
+		bottom: 0;
+		left: calc(50% - 380px);
+		width: 1px;
+		background: rgba(180, 60, 60, 0.08);
+		pointer-events: none;
+		z-index: 0;
+	}
+
+	@media (max-width: 900px) {
+		.pull-number {
+			position: static;
+			text-align: left;
+			opacity: 0.15;
+			margin-bottom: 0.5rem;
+		}
+
+		.story::after { display: none; }
 	}
 
 	@media (max-width: 480px) {
