@@ -280,21 +280,73 @@
 	}
 
 	const MOBILE_IDLE_ZOOM = 1.15;
+	const SCROLL_ZOOM = 2.0;
+	const SCROLL_ZOOM_MOBILE = 1.8;
+	const SCROLL_ZOOM_IN_END = 0.08;   // first 8% of scroll: ease from overview → zoomed
 	const camera = $derived.by(() => {
 		if (!mapState || !birdPos) return { cx: width / 2, cy: height / 2, scale: 1 };
-		// Scroll mode: always overview (no zoom follow)
+
 		// Play-button mode: overview only when idle at t=0
-		if (mode === 'scroll' || (!playing && t === 0)) {
+		if (mode !== 'scroll' && (!playing && t === 0)) {
 			if (width < 600) {
 				return { cx: width / 2, cy: height / 2, scale: MOBILE_IDLE_ZOOM };
 			}
 			return { cx: width / 2, cy: height / 2, scale: 1 };
 		}
+
+		if (mode === 'scroll') {
+			const mcx = width / 2;
+			const mcy = height / 2;
+			const sz = width < 600 ? SCROLL_ZOOM_MOBILE : SCROLL_ZOOM;
+			const baseScale = width < 600 ? MOBILE_IDLE_ZOOM : 1;
+
+			// Before scroll starts: overview
+			if (t <= 0) {
+				return { cx: mcx, cy: mcy, scale: baseScale };
+			}
+
+			// Zoom-in phase
+			if (t < SCROLL_ZOOM_IN_END) {
+				const p = d3.easeCubicInOut(t / SCROLL_ZOOM_IN_END);
+				return {
+					cx: mcx + (birdPos[0] - mcx) * p,
+					cy: mcy + (birdPos[1] - mcy) * p,
+					scale: baseScale + (sz - baseScale) * p
+				};
+			}
+
+			// Following bird during flight
+			if (flightT < 1) {
+				return { cx: birdPos[0], cy: birdPos[1], scale: sz };
+			}
+
+			// Bird arrived — ease back to overview
+			const holdProgress = (t - T_ARRIVAL) / (1 - T_ARRIVAL);
+			const p = d3.easeCubicInOut(Math.min(holdProgress, 1));
+			return {
+				cx: birdPos[0] + (mcx - birdPos[0]) * p,
+				cy: birdPos[1] + (mcy - birdPos[1]) * p,
+				scale: sz + (baseScale - sz) * p
+			};
+		}
+
 		return cameraAt(t, flightT, birdPos, width, height);
 	});
 
+	// Clamp camera so the visible area stays within the SVG bounds
+	const clampedCamera = $derived.by(() => {
+		const { cx, cy, scale } = camera;
+		const halfW = width / (2 * scale);
+		const halfH = height / (2 * scale);
+		return {
+			cx: Math.max(halfW, Math.min(width - halfW, cx)),
+			cy: Math.max(halfH, Math.min(height - halfH, cy)),
+			scale
+		};
+	});
+
 	const cameraTransform = $derived(
-		`translate(${width / 2}, ${height / 2}) scale(${camera.scale}) translate(${-camera.cx}, ${-camera.cy})`
+		`translate(${width / 2}, ${height / 2}) scale(${clampedCamera.scale}) translate(${-clampedCamera.cx}, ${-clampedCamera.cy})`
 	);
 
 	const birdAngle = $derived.by(() => {
@@ -690,12 +742,14 @@
 
 				<!-- End dot (appears when bird arrives) -->
 				{#if flightT >= 1 && recordEndPos}
+					{@const endAnchor = width < 600 ? 'end' : 'middle'}
+					{@const endDx = width < 600 ? -10 / camera.scale : 0}
 					<circle cx={recordEndPos[0]} cy={recordEndPos[1]} r={8 / camera.scale} fill="var(--brick, #b5523b)" />
 					<circle cx={recordEndPos[0]} cy={recordEndPos[1]} r={8 / camera.scale} fill="none" stroke="#fff" stroke-width={2 / camera.scale} />
-					<text x={recordEndPos[0]} y={recordEndPos[1] + 20 / camera.scale} class="endpoint-label-halo" text-anchor="middle" font-weight="700" font-size="{11 / camera.scale}px" stroke-width={3 / camera.scale}>
+					<text x={recordEndPos[0] + endDx} y={recordEndPos[1] + 20 / camera.scale} class="endpoint-label-halo" text-anchor={endAnchor} font-weight="700" font-size="{11 / camera.scale}px" stroke-width={3 / camera.scale}>
 						{recordBird.end.label}
 					</text>
-					<text x={recordEndPos[0]} y={recordEndPos[1] + 20 / camera.scale} class="endpoint-label" text-anchor="middle" fill="var(--brick, #b5523b)" font-weight="700" font-size="{11 / camera.scale}px">
+					<text x={recordEndPos[0] + endDx} y={recordEndPos[1] + 20 / camera.scale} class="endpoint-label" text-anchor={endAnchor} fill="var(--brick, #b5523b)" font-weight="700" font-size="{11 / camera.scale}px">
 						{recordBird.end.label}
 					</text>
 				{/if}

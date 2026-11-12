@@ -288,11 +288,11 @@
 		transform: rotate(-1deg);
 	}
 
-	/* Hero image — wide, clean */
+	/* Hero image — wide, drawn-on-page */
 	.hero-drawing {
-		max-width: 1200px;
+		max-width: 1600px;
 		margin: 0 auto;
-		padding: 0 var(--gutter, 16px) 1.5rem;
+		padding: 0 0 0;
 	}
 
 	.hero-img {
@@ -300,12 +300,12 @@
 		width: 100%;
 		height: auto;
 		mask-image:
-			linear-gradient(to bottom, transparent 0%, black 2%, black 98%, transparent 100%),
-			linear-gradient(to right, transparent 0%, black 2%, black 98%, transparent 100%);
+			linear-gradient(to bottom, transparent 0%, black 4%, black 68%, transparent 100%),
+			linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%);
 		mask-composite: intersect;
 		-webkit-mask-image:
-			linear-gradient(to bottom, transparent 0%, black 2%, black 98%, transparent 100%),
-			linear-gradient(to right, transparent 0%, black 2%, black 98%, transparent 100%);
+			linear-gradient(to bottom, transparent 0%, black 4%, black 68%, transparent 100%),
+			linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%);
 		-webkit-mask-composite: source-in;
 	}
 
@@ -326,6 +326,13 @@
 		color: var(--text-muted, #444);
 		text-align: center;
 		margin: 0.5rem 0 0;
+	}
+
+	/* Pull intro text up into hero's bottom fade zone */
+	.context:first-of-type {
+		margin-top: -4rem;
+		position: relative;
+		z-index: 1;
 	}
 
 	/* 3. Drop cap on first paragraph */
@@ -361,10 +368,10 @@
 		justify-content: center;
 		gap: 0;
 		transform: none;
-		background: #fffdf8;
+		background: transparent;
 		padding: 1.25rem 1rem 0.75rem;
-		border-radius: 2px;
-		border: 1px solid rgba(0, 0, 0, 0.08);
+		border-radius: 0;
+		border: none;
 	}
 
 	.hand-scale img {
@@ -446,6 +453,29 @@
 		max-width: 100%;
 		margin: 0 auto;
 		padding: 0;
+		z-index: 0;
+	}
+
+	.map-section::before,
+	.map-section::after {
+		content: '';
+		position: absolute;
+		left: 0;
+		right: 0;
+		z-index: 2;
+		pointer-events: none;
+	}
+
+	.map-section::before {
+		top: 0;
+		height: 60px;
+		background: linear-gradient(to bottom, var(--bg, #fffdf8), transparent);
+	}
+
+	.map-section::after {
+		bottom: 0;
+		height: 48px;
+		background: linear-gradient(to top, var(--bg, #fffdf8) 0%, transparent 100%);
 	}
 
 	/* 1 (cont.) Transparent context background so dot grid shows through */
@@ -601,7 +631,11 @@
 	@media (max-width: 480px) {
 		.story-header { padding: 1.25rem var(--gutter, 16px) 0.75rem; }
 
-		.hero-drawing { padding-bottom: 1rem; }
+		.hero-drawing { padding-bottom: 0; }
+
+		.context:first-of-type {
+			margin-top: -2rem;
+		}
 
 		.context { padding: 1rem var(--gutter, 16px) 1.5rem; }
 		.context:nth-of-type(2) { padding-top: 0.75rem; padding-bottom: 1.5rem; }
