@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import OgMeta from '$lib/components/OgMeta.svelte';
 	import HummingbirdMap from '$lib/components/HummingbirdMap.svelte';
+	import Scroller from '$lib/components/Scroller.svelte';
 
 	let { data } = $props();
 
@@ -13,6 +14,27 @@
 	let playing = $state(false);
 	let reducedMotion = $state(false);
 	let videoEl = $state(null);
+	let mapProgress = $state(0);
+	let mapIndex = $state(0);
+
+	function reveal(node) {
+		if (reducedMotion) return;
+		node.style.opacity = '0';
+		node.style.transform = 'translateY(24px)';
+		const observer = new IntersectionObserver(
+			([entry]) => {
+				if (entry.isIntersecting) {
+					node.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+					node.style.opacity = '1';
+					node.style.transform = 'translateY(0)';
+					observer.unobserve(node);
+				}
+			},
+			{ threshold: 0.1 }
+		);
+		observer.observe(node);
+		return { destroy() { observer.disconnect(); } };
+	}
 
 	onMount(() => {
 		reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -22,6 +44,9 @@
 		if (tParam !== null) {
 			t = Math.max(0, Math.min(1, parseFloat(tParam)));
 		}
+
+		const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+		mq.addEventListener('change', (e) => { reducedMotion = e.matches; });
 
 		if (videoEl) {
 			const observer = new IntersectionObserver(
@@ -37,6 +62,10 @@
 			observer.observe(videoEl);
 			return () => observer.disconnect();
 		}
+	});
+
+	$effect(() => {
+		if (!reducedMotion) t = mapProgress;
 	});
 </script>
 
@@ -54,15 +83,19 @@
 			<svg class="title-underline" viewBox="0 0 400 6" preserveAspectRatio="none" aria-hidden="true">
 				<path d="M0,3 C20,0 40,6 60,3 C80,0 100,6 120,3 C140,0 160,6 180,3 C200,0 220,6 240,3 C260,0 280,6 300,3 C320,0 340,6 360,3 C380,0 400,6 400,3" fill="none" stroke="var(--ink, #22211f)" stroke-width="2" stroke-linecap="round" />
 			</svg>
-			<p class="dek">
-				A burnt-red hummingbird hovers at a feeder in a quiet backyard in Colorado.
-				It is a hot July afternoon and the bird is fueling up on the free sugar water.
-			</p>
 			<p class="byline">By Zach Alexander</p>
 		</div>
 	</header>
 
-	<section class="context">
+	<section class="hero-drawing">
+		<img
+			class="hero-img"
+			src="/art/hummingbird/hero.png"
+			alt="Two rufous hummingbirds hovering at a red backyard feeder, with a wooden fence and Colorado mountains in the background"
+		/>
+	</section>
+
+	<section class="context" use:reveal>
 		<div class="context-inner">
 			<p>
 				Rufous hummingbirds turn up in backyards across the western United States in late
@@ -77,7 +110,7 @@
 		</div>
 	</section>
 
-	<section class="drawing">
+	<section class="drawing" use:reveal>
 		<div class="hand-scale">
 			<span class="tape tape-tl"></span>
 			<span class="tape tape-tr"></span>
@@ -95,7 +128,7 @@
 		<p class="fig-label">Fig. 1 — Rufous hummingbird, life-size</p>
 	</section>
 
-	<section class="context">
+	<section class="context" use:reveal>
 		<div class="context-inner">
 			<p>
 				These tiny birds breed farther north than any other hummingbird in the world.
@@ -115,22 +148,52 @@
 	</section>
 
 	<section class="map-section">
-		<HummingbirdMap
-			{countriesGeo}
-			{birds}
-			{oldRecord}
-			{species}
-			{meta}
-			bind:t
-			bind:playing
-			{reducedMotion}
-		/>
+		<Scroller bind:index={mapIndex} bind:progress={mapProgress}>
+			{#snippet background()}
+				<HummingbirdMap
+					{countriesGeo}
+					{birds}
+					{oldRecord}
+					{species}
+					{meta}
+					mode="scroll"
+					bind:t
+					bind:playing
+					{reducedMotion}
+				/>
+			{/snippet}
+			{#snippet foreground()}
+				<div class="cards-spacer"></div>
+				<div class="step scroll-card">
+					<p>June 24, 2026. Portage, Alaska. A team glues a 0.06-gram tag to a rufous hummingbird and lets it go.</p>
+				</div>
+				<div class="step scroll-card">
+					<p>The signal shows up in British Columbia — Atlin, Valemount. Hikers' phones pick it up via Bluetooth.</p>
+				</div>
+				<div class="step scroll-card">
+					<p>Through the Rockies. Kemmerer, Wyoming. Durango, Colorado.</p>
+				</div>
+				<div class="step scroll-card">
+					<p>Springerville, Arizona. Four states crossed. Heading for the border.</p>
+				</div>
+				<div class="step scroll-card">
+					<p>Guadalajara. Zamora. At least 3,617 miles from where it started.</p>
+				</div>
+				<div class="step scroll-card scroll-card-empty"></div>
+				<div class="cards-spacer"></div>
+			{/snippet}
+		</Scroller>
 		<p class="fig-label">Fig. 2 — Migration route, Alaska to Mexico</p>
 	</section>
 
-	<section class="context">
+	<section class="hook-number" use:reveal>
+		<span class="hook-digits">{record.distanceMi.toLocaleString()}</span>
+		<span class="hook-label">miles</span>
+		<p class="hook-sub">From a backyard in Alaska to central Mexico — roughly {(record.bodyLengths.min / 1e6).toFixed(0)} to {(record.bodyLengths.max / 1e6).toFixed(0)}&nbsp;million times its own body length.</p>
+	</section>
+
+	<section class="context" use:reveal>
 		<div class="context-inner">
-			<aside class="pull-number" aria-hidden="true">3,617<span>miles</span></aside>
 			<p>
 				You may be thinking, so what. Three thousand-odd miles seems a long way, but I have
 				crossed that distance in a plane, asleep, in one afternoon.
@@ -148,7 +211,7 @@
 
 	<!-- Drawing: scale comparison, half — A single Earth circle in sky and sage, a flat ink line wound round it two and a half times like thread on a spool, and one tiny walking figure in brick at the start of the line. -->
 
-	<section class="context">
+	<section class="context" use:reveal>
 		<div class="context-inner">
 			<p>
 				The other two hummingbirds in the study flew 3,450&nbsp;miles and 3,528&nbsp;miles.
@@ -161,7 +224,7 @@
 		<path d="M0,4 C25,0 50,8 75,4 C100,0 125,8 150,4 C175,0 200,8 225,4 C250,0 275,8 300,4 C325,0 350,8 375,4 C400,0 425,8 450,4 C475,0 500,8 525,4 C550,0 575,8 600,4" fill="none" stroke="var(--ink, #22211f)" stroke-width="2" stroke-linecap="round" />
 	</svg>
 
-	<section class="sources">
+	<section class="sources" use:reveal>
 		<div class="sources-inner">
 			<span class="tape tape-src-tl"></span>
 			<span class="tape tape-src-tr"></span>
@@ -181,25 +244,23 @@
 	/* 1. Dot-grid paper background */
 	.story {
 		background-color: var(--bg, #fffdf8);
-		background-image: radial-gradient(circle, #d5cfc3 0.8px, transparent 0.8px);
-		background-size: 24px 24px;
 	}
 
-	/* 2. Left-aligned header */
+	/* 2. Header */
 	.story-header {
-		padding: 2rem var(--gutter, 16px) 1rem;
+		padding: 2rem var(--gutter, 16px) 1.5rem;
 		text-align: left;
 	}
 
 	.header-inner {
-		max-width: 640px;
+		max-width: 660px;
 		margin: 0 auto;
 	}
 
 	h1 {
 		font-family: var(--font-display, 'Bricolage Grotesque', sans-serif);
 		font-weight: 800;
-		font-size: clamp(1.75rem, 5vw, 2.5rem);
+		font-size: clamp(1.75rem, 5vw, 3rem);
 		line-height: 1.15;
 		margin: 0.5rem 0;
 		color: var(--text, #16151a);
@@ -225,6 +286,27 @@
 		display: inline-block;
 		padding: 0.25em 0.6em;
 		transform: rotate(-1deg);
+	}
+
+	/* Hero image — wide, clean */
+	.hero-drawing {
+		max-width: 1200px;
+		margin: 0 auto;
+		padding: 0 var(--gutter, 16px) 1.5rem;
+	}
+
+	.hero-img {
+		display: block;
+		width: 100%;
+		height: auto;
+		mask-image:
+			linear-gradient(to bottom, transparent 0%, black 2%, black 98%, transparent 100%),
+			linear-gradient(to right, transparent 0%, black 2%, black 98%, transparent 100%);
+		mask-composite: intersect;
+		-webkit-mask-image:
+			linear-gradient(to bottom, transparent 0%, black 2%, black 98%, transparent 100%),
+			linear-gradient(to right, transparent 0%, black 2%, black 98%, transparent 100%);
+		-webkit-mask-composite: source-in;
 	}
 
 	/* Title underline */
@@ -259,7 +341,7 @@
 
 	/* 4. Taped-in drawing */
 	.drawing {
-		max-width: 800px;
+		max-width: 1000px;
 		margin: 0 auto;
 		padding: 1rem var(--gutter, 16px) 1rem;
 	}
@@ -358,24 +440,12 @@
 		opacity: 0.3;
 	}
 
-	/* 6. Sketch frame around map */
+	/* 6. Scroll-driven map */
 	.map-section {
 		position: relative;
-		max-width: 1400px;
+		max-width: 100%;
 		margin: 0 auto;
-		padding: 0 var(--gutter, 16px) 2rem;
-	}
-
-	.map-section::before {
-		content: '';
-		position: absolute;
-		inset: 8px;
-		border: 2px solid var(--ink, #22211f);
-		border-radius: 2px;
-		transform: rotate(0.3deg);
-		opacity: 0.2;
-		pointer-events: none;
-		z-index: 1;
+		padding: 0;
 	}
 
 	/* 1 (cont.) Transparent context background so dot grid shows through */
@@ -456,60 +526,82 @@
 		margin-top: 0.75rem;
 	}
 
-	/* Pull number in margin */
-	.pull-number {
+	/* Hook number — cobalt accent moment */
+	.hook-number {
+		text-align: center;
+		padding: 3rem var(--gutter, 16px) 2rem;
+	}
+
+	.hook-digits {
+		display: block;
 		font-family: var(--font-display, 'Bricolage Grotesque', sans-serif);
 		font-weight: 800;
-		font-size: 3rem;
-		color: var(--ink, #22211f);
-		opacity: 0.12;
+		font-size: clamp(4rem, 15vw, 10rem);
 		line-height: 1;
-		text-align: right;
-		position: absolute;
-		right: calc(100% + 1.5rem);
-		top: 2rem;
+		color: var(--accent, #3b4fd9);
 	}
 
-	.pull-number span {
+	.hook-label {
 		display: block;
-		font-size: 0.4em;
-		font-weight: 400;
-		letter-spacing: 0.1em;
+		font-family: var(--font-body, 'Karla', sans-serif);
+		font-size: clamp(1rem, 3vw, 1.5rem);
 		text-transform: uppercase;
+		letter-spacing: 0.2em;
+		color: var(--accent, #3b4fd9);
+		opacity: 0.7;
+		margin-top: 0.25rem;
 	}
 
-	.context:nth-of-type(3) .context-inner {
-		position: relative;
+	.hook-sub {
+		font-family: var(--font-body, 'Karla', sans-serif);
+		font-size: 1.0625rem;
+		line-height: 1.55;
+		color: var(--text-muted, #444);
+		max-width: 480px;
+		margin: 1rem auto 0;
 	}
 
-	/* Page fold line (notebook spine) */
-	.story::after {
-		content: '';
-		position: fixed;
-		top: 0;
-		bottom: 0;
-		left: calc(50% - 380px);
-		width: 1px;
-		background: rgba(180, 60, 60, 0.08);
-		pointer-events: none;
-		z-index: 0;
+	/* Scroll cards for map narration */
+	.cards-spacer {
+		height: 70vh;
 	}
 
-	@media (max-width: 900px) {
-		.pull-number {
-			position: static;
-			text-align: left;
-			opacity: 0.15;
-			margin-bottom: 0.5rem;
+	.scroll-card {
+		max-width: 320px;
+		margin: 0 0 70vh;
+		padding: 1rem 1.25rem;
+		background: rgba(255, 253, 248, 0.88);
+		border: 1px solid rgba(0, 0, 0, 0.1);
+		border-radius: 3px;
+		pointer-events: auto;
+		backdrop-filter: blur(4px);
+	}
+
+	.scroll-card p {
+		font-family: var(--font-body, 'Karla', sans-serif);
+		font-size: 1rem;
+		line-height: 1.55;
+		color: var(--text, #16151a);
+		margin: 0;
+	}
+
+	.scroll-card-empty {
+		background: none;
+		border: none;
+		backdrop-filter: none;
+		min-height: 1px;
+	}
+
+	@media (min-width: 600px) {
+		.scroll-card {
+			margin-left: clamp(24px, 5vw, 80px);
 		}
-
-		.story::after { display: none; }
 	}
 
 	@media (max-width: 480px) {
-		.map-section::before { display: none; }
+		.story-header { padding: 1.25rem var(--gutter, 16px) 0.75rem; }
 
-		.story-header { padding: 1.25rem var(--gutter, 16px) 0.5rem; }
+		.hero-drawing { padding-bottom: 1rem; }
 
 		.context { padding: 1rem var(--gutter, 16px) 1.5rem; }
 		.context:nth-of-type(2) { padding-top: 0.75rem; padding-bottom: 1.5rem; }
@@ -519,9 +611,16 @@
 		.context p { font-size: 1.0625rem; line-height: 1.55; }
 
 		.drawing { padding: 0.5rem var(--gutter, 16px) 0.5rem; }
-		.map-section { padding-bottom: 1rem; }
 		.sources { padding: 1.25rem var(--gutter, 16px) 2.5rem; }
 		.sources-inner { padding: 1rem 1.125rem; }
+
+		.scroll-card {
+			max-width: none;
+			margin-left: var(--gutter, 16px);
+			margin-right: var(--gutter, 16px);
+		}
+
+		.hook-number { padding: 2rem var(--gutter, 16px) 1.5rem; }
 	}
 
 	@media (prefers-reduced-motion: reduce) {

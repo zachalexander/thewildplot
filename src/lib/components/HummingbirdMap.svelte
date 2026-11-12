@@ -11,7 +11,8 @@
 		meta,
 		t = $bindable(0),
 		playing = $bindable(false),
-		reducedMotion = false
+		reducedMotion = false,
+		mode = 'play-button'
 	} = $props();
 
 	let svgEl = $state(null);
@@ -281,8 +282,9 @@
 	const MOBILE_IDLE_ZOOM = 1.15;
 	const camera = $derived.by(() => {
 		if (!mapState || !birdPos) return { cx: width / 2, cy: height / 2, scale: 1 };
-		// Show overview before animation starts — slight zoom on mobile
-		if (!playing && t === 0) {
+		// Scroll mode: always overview (no zoom follow)
+		// Play-button mode: overview only when idle at t=0
+		if (mode === 'scroll' || (!playing && t === 0)) {
 			if (width < 600) {
 				return { cx: width / 2, cy: height / 2, scale: MOBILE_IDLE_ZOOM };
 			}
@@ -442,11 +444,15 @@
 		const ro = new ResizeObserver((entries) => {
 			for (const entry of entries) {
 				const newW = Math.round(entry.contentRect.width);
-				if (newW !== width) {
+				const newH = Math.round(entry.contentRect.height);
+				if (newW !== width || (mode === 'scroll' && newH > 0 && newH !== height)) {
 					width = newW;
-					// Landscape on desktop, portrait on mobile
-					const ratio = newW >= 900 ? 0.56 : newW >= 600 ? 0.7 : 1.6;
-					height = Math.round(Math.max(newW * ratio, 400));
+					if (mode === 'scroll' && newH > 0) {
+						height = newH;
+					} else {
+						const ratio = newW >= 900 ? 0.56 : newW >= 600 ? 0.7 : 1.6;
+						height = Math.round(Math.max(newW * ratio, 400));
+					}
 				}
 			}
 		});
@@ -505,8 +511,9 @@
 	}
 </script>
 
-<div class="hummingbird-map" bind:this={containerEl}>
+<div class="hummingbird-map" class:scroll-mode={mode === 'scroll'} bind:this={containerEl}>
 	{#if mapState}
+		{#if mode !== 'scroll'}
 		<!-- Controls: above map on mobile, overlaid at bottom on desktop -->
 		<div class="controls">
 			{#if !playing && t === 0}
@@ -518,6 +525,7 @@
 				<button class="pill play-btn" onclick={stop} aria-label="Pause"><svg width="12" height="14" viewBox="0 0 12 14" fill="currentColor"><rect x="0" y="0" width="4" height="14" /><rect x="8" y="0" width="4" height="14" /></svg></button>
 			{/if}
 		</div>
+		{/if}
 		<svg
 			bind:this={svgEl}
 			viewBox="0 0 {width} {height}"
@@ -761,6 +769,14 @@
 		display: block;
 		width: 100%;
 		height: auto;
+	}
+
+	.scroll-mode {
+		height: 100%;
+	}
+
+	.scroll-mode svg {
+		height: 100%;
 	}
 
 	.waypoint-label-halo {
