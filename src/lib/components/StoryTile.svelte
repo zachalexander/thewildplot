@@ -42,7 +42,7 @@
 		flex-direction: column;
 		justify-content: space-between;
 		gap: 32px;
-		min-height: 360px;
+		min-height: 480px;
 		padding: 28px;
 		border-radius: var(--radius-tile);
 		background: var(--tile-bg);
@@ -56,7 +56,7 @@
 	}
 
 	.tile.large {
-		min-height: 480px;
+		min-height: 560px;
 		padding: clamp(28px, 4vw, 40px);
 	}
 
@@ -67,7 +67,6 @@
 		height: 100%;
 		object-fit: cover;
 		object-position: 60% 35%;
-		transform: scale(0.92);
 		pointer-events: none;
 	}
 
@@ -121,7 +120,7 @@
 	}
 
 	.tile-title {
-		font-size: 2.125rem;
+		font-size: 2.5rem;
 		line-height: 1;
 	}
 
@@ -144,7 +143,6 @@
 
 	@media (max-width: 640px) {
 		.tile-cover {
-			transform: scale(0.92);
 			object-position: center center;
 		}
 	}

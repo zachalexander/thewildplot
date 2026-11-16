@@ -9,7 +9,7 @@
 <script>
 	import StoryTile from './StoryTile.svelte';
 
-	let { stories = [], featureFirst = false, showUpcoming = false, label = 'Stories' } = $props();
+	let { stories = [], featureFirst = false, showUpcoming = false, showFilters = true, label = 'Stories' } = $props();
 
 	let active = $state('all');
 
@@ -19,7 +19,7 @@
 	);
 </script>
 
-{#if stories.length > 1 && tags.length > 1}
+{#if showFilters && stories.length > 1 && tags.length > 1}
 	<div class="filters" role="group" aria-label="Filter by topic">
 		<button
 			type="button"
@@ -69,8 +69,8 @@
 
 	.grid {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
-		gap: 20px;
+		grid-template-columns: repeat(auto-fit, minmax(min(480px, 100%), 1fr));
+		gap: 28px;
 	}
 
 	.cell {
@@ -93,7 +93,7 @@
 		flex-direction: column;
 		justify-content: space-between;
 		gap: 32px;
-		min-height: 360px;
+		min-height: 480px;
 		padding: 28px;
 		border: 2px dashed var(--text-light);
 		border-radius: var(--radius-tile);

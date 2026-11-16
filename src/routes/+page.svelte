@@ -7,34 +7,58 @@
 <OgMeta title="The Wild Plot" description="Visual essays by Zach Alexander." />
 
 <main class="home">
-	<div class="container">
-		<header class="site-intro">
+	<section class="hero">
+		<div class="hero-overlay">
 			<h1 class="wordmark"><img src="/wildplot.png" alt="the wild plot" class="hero-logo" /></h1>
-			<p>
-				Hand-drawn data visuals and essays about the wonder of the natural world, and our place
-				in it.
-			</p>
-		</header>
+			<p class="tagline">Visual essays on the hidden patterns in everyday life.</p>
+		</div>
+	</section>
 
-		<StoryGrid {stories} featureFirst showUpcoming />
+	<div class="container">
+		<span class="section-eyebrow">Visual Essays</span>
+		<StoryGrid {stories} featureFirst showUpcoming showFilters={false} />
 	</div>
 </main>
 
 <style>
-	.home {
-		padding: 24px var(--gutter) 0;
+	.hero {
+		position: relative;
+		height: 100vh;
+		background-image: url('/art/homepage-hero.png');
+		background-size: cover;
+		background-position: center center;
+		background-color: var(--night, #23304a);
+		display: flex;
+		align-items: flex-end;
+		justify-content: center;
 	}
 
-	.container {
-		max-width: var(--max-width);
-		margin: 0 auto;
+	.hero::after {
+		content: '';
+		position: absolute;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		height: 60%;
+		background: linear-gradient(
+			to bottom,
+			transparent 0%,
+			color-mix(in srgb, var(--bg, #f6f0e2) 4%, transparent) 15%,
+			color-mix(in srgb, var(--bg, #f6f0e2) 12%, transparent) 30%,
+			color-mix(in srgb, var(--bg, #f6f0e2) 25%, transparent) 42%,
+			color-mix(in srgb, var(--bg, #f6f0e2) 45%, transparent) 55%,
+			color-mix(in srgb, var(--bg, #f6f0e2) 70%, transparent) 68%,
+			color-mix(in srgb, var(--bg, #f6f0e2) 88%, transparent) 80%,
+			var(--bg, #f6f0e2) 100%
+		);
+		pointer-events: none;
 	}
 
-	.site-intro {
+	.hero-overlay {
+		position: relative;
+		z-index: 1;
 		text-align: center;
-		padding-bottom: 28px;
-		margin-bottom: 32px;
-		border-bottom: var(--rule);
+		padding: 0 var(--gutter, 24px) 48px;
 	}
 
 	.wordmark {
@@ -44,14 +68,46 @@
 	.hero-logo {
 		display: inline-block;
 		width: 100%;
-		max-width: 680px;
+		max-width: 320px;
 		height: auto;
+		filter: brightness(0);
+		opacity: 0.9;
 	}
 
-	.site-intro p {
-		max-width: 520px;
-		margin: 0 auto;
+	.tagline {
+		margin-top: 12px;
 		font-size: 1.125rem;
 		line-height: 1.5;
+		color: var(--ink, #22211f);
+		max-width: 420px;
+		margin-left: auto;
+		margin-right: auto;
+	}
+
+	.container {
+		max-width: var(--max-width);
+		margin: 0 auto;
+		padding: 0 var(--gutter, 24px);
+	}
+
+	.section-eyebrow {
+		display: block;
+		margin-top: 48px;
+		margin-bottom: 24px;
+		font-size: 0.8125rem;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color: var(--text-muted, #888);
+	}
+
+	@media (max-width: 640px) {
+		.hero {
+			background-position: 60% center;
+		}
+
+		.hero-logo {
+			max-width: 240px;
+		}
 	}
 </style>
