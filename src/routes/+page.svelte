@@ -23,43 +23,23 @@
 <style>
 	.hero {
 		position: relative;
-		height: 100vh;
+		height: 500vw;
 		background-image: url('/art/homepage-hero.png');
 		background-size: 100% auto;
 		background-repeat: no-repeat;
-		background-position: center bottom;
+		background-position: center top;
 		background-color: var(--paper, #f6f0e2);
 		display: flex;
-		align-items: flex-end;
+		align-items: flex-start;
 		justify-content: center;
 	}
 
-	.hero::after {
-		content: '';
-		position: absolute;
-		bottom: 0;
-		left: 0;
-		right: 0;
-		height: 60%;
-		background: linear-gradient(
-			to bottom,
-			transparent 0%,
-			color-mix(in srgb, var(--bg, #f6f0e2) 4%, transparent) 15%,
-			color-mix(in srgb, var(--bg, #f6f0e2) 12%, transparent) 30%,
-			color-mix(in srgb, var(--bg, #f6f0e2) 25%, transparent) 42%,
-			color-mix(in srgb, var(--bg, #f6f0e2) 45%, transparent) 55%,
-			color-mix(in srgb, var(--bg, #f6f0e2) 70%, transparent) 68%,
-			color-mix(in srgb, var(--bg, #f6f0e2) 88%, transparent) 80%,
-			var(--bg, #f6f0e2) 100%
-		);
-		pointer-events: none;
-	}
 
 	.hero-overlay {
 		position: relative;
 		z-index: 1;
 		text-align: center;
-		padding: 0 var(--gutter, 24px) 48px;
+		padding: 48px var(--gutter, 24px) 0;
 	}
 
 	.wordmark {
@@ -104,8 +84,9 @@
 
 	@media (max-width: 640px) {
 		.hero {
-			background-size: cover;
+			background-size: 100% auto;
 			background-position: center bottom;
+			justify-content: center;
 		}
 
 		.hero-logo {
