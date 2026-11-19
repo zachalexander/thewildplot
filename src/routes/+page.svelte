@@ -25,10 +25,10 @@
 		position: relative;
 		height: 100vh;
 		background-image: url('/art/homepage-hero.png');
-		background-size: contain;
+		background-size: 100% auto;
 		background-repeat: no-repeat;
 		background-position: center bottom;
-		background-color: var(--night, #23304a);
+		background-color: var(--paper, #f6f0e2);
 		display: flex;
 		align-items: flex-end;
 		justify-content: center;
