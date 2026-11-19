@@ -25,8 +25,9 @@
 		position: relative;
 		height: 100vh;
 		background-image: url('/art/homepage-hero.png');
-		background-size: cover;
-		background-position: center center;
+		background-size: contain;
+		background-repeat: no-repeat;
+		background-position: center bottom;
 		background-color: var(--night, #23304a);
 		display: flex;
 		align-items: flex-end;
@@ -103,7 +104,8 @@
 
 	@media (max-width: 640px) {
 		.hero {
-			background-position: 60% center;
+			background-size: cover;
+			background-position: center bottom;
 		}
 
 		.hero-logo {
